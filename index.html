@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clue Fusion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600&family=Noto+Sans+Arabic&family=Noto+Sans+Armenian&family=Noto+Sans+Bengali&family=Noto+Sans+Devanagari&family=Noto+Sans+Ethiopic&family=Noto+Sans+Georgian&family=Noto+Sans+Gujarati&family=Noto+Sans+Gurmukhi&family=Noto+Sans+Hebrew&family=Noto+Sans+JP&family=Noto+Sans+KR&family=Noto+Sans+Kannada&family=Noto+Sans+Khmer&family=Noto+Sans+Lao&family=Noto+Sans+Malayalam&family=Noto+Sans+Myanmar&family=Noto+Sans+SC&family=Noto+Sans+Sinhala&family=Noto+Sans+TC&family=Noto+Sans+Tamil&family=Noto+Sans+Telugu&family=Noto+Sans+Thai&family=Noto+Sans+Oriya&family=Noto+Sans+Meetei+Mayek&family=Noto+Nastaliq+Urdu&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ocean:#12283a; --panel:#0e2130; --land:#264457; --line:#3b5a6d;
+  --ink:#e6eef2; --muted:#8ea6b4; --sign:#f2c94c; --ok:#7cc7b4; --ko:#ef7d6b;
+  --font:Bahnschrift,"DIN Alternate","DIN 2014","Roboto Condensed","Arial Narrow",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;background:var(--ocean);color:var(--ink);font:15px/1.45 var(--font)}
+a{color:var(--ok)}
+button{font:inherit;color:inherit;background:var(--land);border:1px solid var(--line);border-radius:8px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--ok)}
+button.primary{background:var(--sign);border-color:var(--sign);color:#1a1a1a;font-weight:600}
+:focus-visible{outline:2px solid var(--sign);outline-offset:2px}
+.wrap{max-width:1000px;margin:0 auto;padding:14px 16px 60px}
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+h1{margin:0;font-size:22px;letter-spacing:.4px}
+.sub{color:var(--muted);font-size:13px}
+header .right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.score{display:flex;gap:12px;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.score b{color:var(--ink)}
+.score .st b{color:var(--sign)}
+/* shared trainer bar */
+.tgm-nav{display:inline-flex;gap:4px;align-items:center;flex:none}.tgm-nav>a{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:7px;border:1px solid currentColor;opacity:.5;color:inherit;text-decoration:none;font-size:14px;line-height:1}.tgm-nav>a:hover,.tgm-nav>a:focus-visible{opacity:1}
+/* clues */
+.clues{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.clue{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.clue .kind{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);display:flex;gap:8px}
+.clue .media{display:grid;place-items:center;min-height:170px;background:#0a1824;border-radius:8px;overflow:hidden}
+.clue img{max-width:100%;max-height:230px;display:block;cursor:zoom-in}
+.signbox{width:100%;padding:16px 14px;display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center;text-align:center}
+.signbox span{display:inline-block;background:#f4f4ef;color:#1b1b1b;border:3px solid #1b1b1b;border-radius:6px;padding:4px 12px;font-size:24px;line-height:1.3;max-width:100%;overflow-wrap:anywhere}
+.signbox span:nth-child(2){background:#1f5fa8;color:#fff;border-color:#fff;box-shadow:0 0 0 2px #1f5fa8}
+.clue .fits{display:none;font-size:13px;color:var(--muted)}
+.done .clue .fits{display:block}
+.fits .f{display:inline-block;margin:2px 4px 0 0;padding:0 6px;border:1px solid var(--line);border-radius:4px;color:var(--ink)}
+.fits .f.t{border-color:var(--ok);color:var(--ok)}
+.fits .f.a{border-color:var(--ko);color:var(--ko)}
+.credit{font-size:11px;color:var(--muted)}
+.credit a{color:var(--muted)}
+/* answers */
+.ask{margin:16px 0 8px;color:var(--muted);font-size:14px}
+.opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.opt{display:flex;align-items:center;gap:10px;text-align:left;padding:10px 12px;font-size:16px}
+.opt .k{flex:none;width:22px;height:22px;display:grid;place-items:center;border:1px solid var(--line);border-radius:5px;font-size:12px;color:var(--muted)}
+.opt .fl{font-size:20px}
+.opt .nm{min-width:0;overflow-wrap:anywhere}
+.opt .why{flex:none;margin-left:auto;font-size:12px;color:var(--muted);letter-spacing:1px}
+.opt.right{border-color:var(--ok);background:#173c3a}
+.opt.wrong{border-color:var(--ko);background:#40242a}
+.opt:disabled{cursor:default;color:var(--ink)}
+.verdict{margin-top:14px;padding:12px 14px;border-radius:10px;background:var(--panel);border:1px solid var(--line)}
+.verdict .v{font-size:18px;font-weight:600}
+.verdict .v.ok{color:var(--ok)} .verdict .v.ko{color:var(--ko)}
+.verdict p{margin:6px 0 0;color:var(--muted)}
+.verdict .train{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:8px;font-size:14px}
+.next{display:flex;gap:10px;align-items:center;margin-top:12px}
+.next .hint{color:var(--muted);font-size:12px}
+.empty{padding:30px;text-align:center;color:var(--muted)}
+.note{color:var(--muted);font-size:12px;margin-top:18px}
+/* settings drawer */
+#settings{position:fixed;top:0;right:0;bottom:0;width:330px;max-width:92vw;overflow-y:auto;z-index:40;background:var(--panel);border-left:1px solid var(--line);padding:16px;transform:translateX(105%);transition:transform .2s ease;visibility:hidden}
+#settings.open{transform:none;visibility:visible}
+#settings h2{margin:0 0 12px;font-size:17px;display:flex}
+#settings h2 button{margin-left:auto;padding:2px 9px}
+#settings fieldset{border:1px solid var(--line);border-radius:8px;margin:0 0 12px;padding:8px 12px}
+#settings legend{color:var(--muted);font-size:13px;padding:0 4px}
+#settings label{display:flex;gap:8px;align-items:center;margin:5px 0}
+#settings small{color:var(--muted)}
+#scrim{position:fixed;inset:0;background:#0007;z-index:39}
+/* explore: every clue of one country and the countries each one fits */
+#exp h2{margin:4px 0 4px;font-size:22px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#exp h2 .sp{flex:1}
+#exp h3{margin:18px 0 8px;font-size:14px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+#exp select{font:inherit;color:inherit;background:var(--land);border:1px solid var(--line);border-radius:8px;padding:6px 8px;max-width:100%}
+.egrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.egrid .clue .media{min-height:120px}
+.egrid .clue img{max-height:160px}
+.egrid .fits{display:block}
+.egrid .signbox span{font-size:20px}
+.solo{color:var(--sign);font-size:12px}
+@media (max-width:700px){
+  .opts{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .opt{padding:9px 8px;gap:7px;font-size:15px}
+  .clue .media{min-height:130px}
+  .clue img{max-height:170px}
+  .signbox span{font-size:20px}
+  h1{font-size:19px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<!-- tgm-pwa : hors-ligne et installation, généré par Atlas/tools/pwa.py -->
+<link rel="apple-touch-icon" href="icons/icon-192.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#12283a"><link rel="icon" href="icons/icon-192.png">
+<script>if ('serviceWorker' in navigator && location.protocol.startsWith('http')) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
+<!-- /tgm-pwa -->
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="tgm-nav"><a href="https://tgm-hub.github.io/Atlas/" title="Atlas">⌂</a><a href="https://tgm-hub.github.io/Atlas/daily.html" target="gg-daily" title="Daily review">⏱</a><a href="https://tgm-hub.github.io/Atlas/confusions.html" title="Mix-ups across trainers">⇄</a></span>
+    <h1>Clue Fusion</h1>
+    <span class="sub" id="pool">loading…</span>
+    <span class="right">
+      <span class="score"><span>round <b id="sN">0</b></span><span>right <b id="sOk">0</b></span><span class="st">streak <b id="sSt">0</b></span></span>
+      <button id="expBtn" title="Explore this country's clues (E)">🧭 Explore</button>
+      <button id="gear" title="Settings (S)" aria-label="Settings">⚙</button>
+    </span>
+  </header>
+
+  <main id="game">
+    <div class="clues" id="clues"></div>
+    <div class="ask" id="ask"></div>
+    <div class="opts" id="opts"></div>
+    <div id="after"></div>
+  </main>
+  <section id="exp" hidden></section>
+  <p class="note" id="note">Each clue alone fits several countries; together they fit only one. Keys: <b>1–6</b> to answer, <b>Enter</b> for the next round, <b>E</b> to explore the clues, <b>S</b> for settings.</p>
+</div>
+
+<div id="scrim" hidden></div>
+<aside id="settings" aria-label="Settings">
+  <h2>Settings <button id="close" aria-label="Close">×</button></h2>
+  <fieldset><legend>Clues</legend>
+    <label><input type="checkbox" data-k="plate" checked> Plates</label>
+    <label><input type="checkbox" data-k="bollard" checked> Bollards</label>
+    <label><input type="checkbox" data-k="lang" checked> Sign language</label>
+    <small>At least two kinds are needed.</small>
+  </fieldset>
+  <fieldset><legend>Countries</legend>
+    <label><input type="radio" name="tier" value="1"> Tier 1 only (most frequent)</label>
+    <label><input type="radio" name="tier" value="2"> Tiers 1–2</label>
+    <label><input type="radio" name="tier" value="3" checked> Tiers 1–3</label>
+    <label><input type="radio" name="tier" value="4"> All</label>
+    <small>Tiers come from the Atlas (countries.json).</small>
+  </fieldset>
+  <fieldset><legend>Focus</legend>
+    <label><input type="checkbox" id="optMix" checked> More often: countries I mix up in any trainer</label>
+    <label><input type="checkbox" id="optThree"> Always three clues when possible</label>
+  </fieldset>
+  <fieldset><legend>Progress</legend>
+    <button id="reset">Erase my progress</button>
+  </fieldset>
+</aside>
+
+<script src="tgm-core.js"></script>
+<script src="data/langs.js"></script>
+<!-- plates come straight from the plate-trainer repo next to this one (same site on GitHub Pages) -->
+<script src="../plate-trainer/data/countries.js" onerror="window.CF_NOPLATES=1"></script>
+<script src="../plate-trainer/data/plates.js" onerror="window.CF_NOPLATES=1"></script>
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const T = window.TGM;
+const HKEY = 'cluefusion.hist', PKEY = 'cluefusion.prefs';
+const KIND = { plate: 'Plate', bollard: 'Bollard', lang: 'Sign' };
+const TRAIN = {   // where to drill each kind of clue, {iso} in lower case
+  plate: ['Plates', 'https://tgm-hub.github.io/plate-trainer/#{iso}'],
+  bollard: ['Bollards', 'https://tgm-hub.github.io/bollards-trainer/#{iso}'],
+  lang: ['Sign Reader', 'https://tgm-hub.github.io/script-identifier-geoguessr/#{iso}'],
+};
+const lsGet = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+let HIST = lsGet(HKEY, {});          // iso -> [seen, correct, box 0..5]
+const prefs = Object.assign({ kinds: { plate: true, bollard: true, lang: true }, tier: 3, mix: true, three: false }, lsGet(PKEY, {}));
+const sess = { n: 0, ok: 0, streak: 0 };
+const nameOf = iso => T ? T.name(iso, 'en') : iso;
+const flag = iso => T ? T.flag(iso) : '';
+
+// ---------------------------------------------------------------- data
+// Country names used by plate-trainer and bollards -> ISO (TGM core names + the few spellings that differ)
+const ALIAS = { 'czech republic': 'CZ', 'czechia': 'CZ', 'åland': 'AX', 'aland': 'AX', 'réunion': 'RE', 'reunion': 'RE', 'united states': 'US', 'usa': 'US',
+  'united kingdom': 'GB', 'uk': 'GB', 'cocos (keeling) islands': 'CC', 'south korea': 'KR', 'north macedonia': 'MK', 'faroe islands': 'FO',
+  'hong kong': 'HK', 'christmas island': 'CX', 'bosnia and herzegovina': 'BA', 'united arab emirates': 'AE', 'the netherlands': 'NL', 'curacao': 'CW', 'curaçao': 'CW' };
+const BYNAME = {};
+if (T) T.isos().forEach(k => { BYNAME[T.name(k, 'en').toLowerCase()] = k; BYNAME[T.name(k, 'fr').toLowerCase()] = k; });
+(window.COUNTRIES || []).forEach(c => { if (c.f && T && T.has(c.f)) BYNAME[c.n.toLowerCase()] = c.f; });
+const isoOf = n => { if (!n) return null; const k = String(n).toLowerCase(); const i = ALIAS[k] || BYNAME[k]; return i && T && T.has(i) ? i : null; };
+
+const CLUES = {};                    // iso -> [{kind, cand:Set, ...item}]
+const add = (iso, c) => { (CLUES[iso] = CLUES[iso] || []).push(c); };
+
+function loadPlates() {
+  if (window.CF_NOPLATES || !Array.isArray(window.PLATES)) return 0;
+  // A plate points to its country and its look-alikes (plate-trainer's own list); plates with the same look tags
+  // also count, so a plate with no look-alike listed is not taken for a giveaway.
+  const byTags = {};
+  PLATES.forEach(p => { const i = isoOf(p.country); if (i) (byTags[(p.tags || []).slice().sort().join(' ')] = byTags[(p.tags || []).slice().sort().join(' ')] || new Set()).add(i); });
+  let n = 0;
+  PLATES.forEach(p => {
+    const i = isoOf(p.country); if (!i || !p.img) return;
+    const cand = new Set([i, ...(p.lookalikes || []).map(isoOf).filter(Boolean)]);
+    const tg = (p.tags || []).slice().sort().join(' ');
+    if (tg) byTags[tg].forEach(x => cand.add(x));
+    add(i, { kind: 'plate', cand, img: '../plate-trainer/' + p.img, credit: p.credit, creditUrl: p.creditUrl, id: 'p:' + p.id });
+    n++;
+  });
+  return n;
+}
+async function loadBollards() {
+  try {
+    const r = await fetch('../bollards-trainer/bollards.json', { cache: 'no-cache' });
+    if (!r.ok) return 0;
+    const d = await r.json(), dir = '../bollards-trainer/' + (d.imageDir || 'images/');
+    const sig = {};
+    const key = e => (e.props || []).slice().sort().join(' + ');
+    d.entries.forEach(e => { const i = isoOf(e.country); if (i) (sig[key(e)] = sig[key(e)] || new Set()).add(i); });
+    let n = 0;
+    d.entries.forEach(e => {   // a bollard points to every country with the same colours and material (bollards-trainer's signature)
+      const i = isoOf(e.country); if (!i || !e.file) return;
+      add(i, { kind: 'bollard', cand: sig[key(e)], img: dir + e.file, sig: key(e), id: 'b:' + e.id }); n++;
+    });
+    return n;
+  } catch (err) { return 0; }
+}
+function loadLangs() {
+  const L = window.CF_LANGS || [], by = {};
+  L.forEach(l => by[l.id] = l);
+  let n = 0;
+  L.forEach(l => {   // a language points to where it is written and where its look-alikes are (Sign Reader's lists)
+    const cand = new Set();
+    [l.id, ...l.conf].forEach(id => (by[id] ? by[id].cc : []).forEach(c => T && T.has(c) && cand.add(c)));
+    l.cc.filter(c => T && T.has(c)).forEach(i => { add(i, { kind: 'lang', cand, lang: l, id: 'l:' + l.id }); n++; });
+  });
+  return n;
+}
+
+// ---------------------------------------------------------------- rounds
+const inter = sets => { let r = new Set(sets[0]); for (const s of sets.slice(1)) r = new Set([...r].filter(x => s.has(x))); return r; };
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+// Clue sets for one country: each clue alone fits 2+ countries, all together only this one; kinds all different.
+function combos(iso, want3) {
+  const cl = (CLUES[iso] || []).filter(c => prefs.kinds[c.kind] && c.cand.size >= 2);
+  const kinds = [...new Set(cl.map(c => c.kind))];
+  if (kinds.length < 2) return [];
+  const by = {}; cl.forEach(c => (by[c.kind] = by[c.kind] || []).push(c));
+  const out = [];
+  const tryOn = ks => {
+    for (let t = 0; t < 60; t++) {
+      const pick = ks.map(k => by[k][Math.random() * by[k].length | 0]);
+      const r = inter(pick.map(c => c.cand));
+      if (r.size === 1 && r.has(iso)) { out.push(pick); return true; }
+    }
+    return false;
+  };
+  const pairs = [], triples = [];
+  for (let a = 0; a < kinds.length; a++) for (let b = a + 1; b < kinds.length; b++) {
+    pairs.push([kinds[a], kinds[b]]);
+    for (let c = b + 1; c < kinds.length; c++) triples.push([kinds[a], kinds[b], kinds[c]]);
+  }
+  if (want3) shuffle(triples).forEach(tryOn);
+  if (!out.length) shuffle(pairs).forEach(tryOn);
+  if (!out.length) triples.forEach(tryOn);
+  return out;
+}
+let ELIG = [];
+function eligible() {
+  ELIG = Object.keys(CLUES).filter(iso => (T.tier(iso) || 4) <= prefs.tier && combos(iso, false).length);
+  $('pool').textContent = ELIG.length ? `${ELIG.length} countries` : 'no country';
+  pushStats();
+}
+function mixedUp() {
+  const s = new Set();
+  if (T && T.confusions) T.confusions.pairs({ days: 60 }).slice(0, 40).forEach(p => { s.add(p.a); s.add(p.b); });
+  return s;
+}
+const recent = [];
+function pickTarget() {
+  const mix = prefs.mix ? mixedUp() : new Set(), TW = { 1: 4, 2: 2, 3: 1, 4: 0.6 };
+  const pool = ELIG.filter(i => !recent.includes(i));
+  const list = pool.length ? pool : ELIG;
+  const w = list.map(i => { const h = HIST[i]; const box = h ? h[2] : 0; return (TW[T.tier(i)] || 1) * (6 - box) * (mix.has(i) ? 3 : 1); });
+  let r = Math.random() * w.reduce((a, b) => a + b, 0);
+  for (let k = 0; k < list.length; k++) { r -= w[k]; if (r <= 0) return list[k]; }
+  return list[list.length - 1];
+}
+
+let round = null;
+function newRound(force) {
+  $('game').classList.remove('done');
+  $('after').innerHTML = '';
+  if (!ELIG.length) {
+    $('clues').innerHTML = `<div class="empty">No country fits these settings: turn on more clue kinds or tiers (⚙).</div>`;
+    $('opts').innerHTML = ''; $('ask').textContent = ''; round = null; return;
+  }
+  const iso = force && ELIG.includes(force) ? force : pickTarget();
+  recent.push(iso); if (recent.length > Math.min(6, ELIG.length - 1)) recent.shift();
+  const sets = combos(iso, prefs.three);
+  const clues = shuffle(sets[0].slice());
+  // Options: the country, then those fitting the most clues, then the rest of the clues' countries, then neighbours
+  const score = {};
+  clues.forEach(c => c.cand.forEach(x => { if (x !== iso) score[x] = (score[x] || 0) + 1; }));
+  let others = shuffle(Object.keys(score)).sort((a, b) => score[b] - score[a]).slice(0, 5);
+  if (others.length < 5) {
+    const cont = T.continent(iso);
+    others = others.concat(shuffle(ELIG.filter(x => x !== iso && !others.includes(x) && T.continent(x) === cont))).slice(0, 5);
+  }
+  round = { iso, clues, opts: shuffle([iso, ...others]), answered: false };
+  render();
+}
+
+function clueHtml(c, i) {
+  let media = '', extra = '';
+  if (c.kind === 'lang') {
+    const s = shuffle(c.lang.s.slice()).slice(0, 2);
+    media = `<div class="signbox" style="font-family:'${esc(c.lang.font)}','Noto Sans',sans-serif">${s.map(x => `<span>${esc(x)}</span>`).join('')}</div>`;
+  } else {
+    media = `<img src="${esc(c.img)}" alt="${KIND[c.kind]}" loading="eager" onclick="window.open(this.src,'_blank')">`;
+    if (c.kind === 'bollard') extra = '<div class="credit">photo: <a href="https://geohints.com/meta/bollards" target="_blank" rel="noopener">geohints</a></div>';
+    else if (c.credit) extra = `<div class="credit">photo: ${c.creditUrl ? `<a href="${esc(c.creditUrl)}" target="_blank" rel="noopener">${esc(c.credit)}</a>` : esc(c.credit)}</div>`;
+  }
+  return `<div class="clue" data-i="${i}"><div class="kind"><span>${i + 1}. ${KIND[c.kind]}</span></div><div class="media">${media}</div>${extra}<div class="fits"></div></div>`;
+}
+function render() {
+  const r = round;
+  $('clues').innerHTML = r.clues.map(clueHtml).join('');
+  $('ask').textContent = `${r.clues.length} clues, one country. Which one?`;
+  $('opts').innerHTML = r.opts.map((iso, k) => `<button class="opt" data-iso="${iso}"><span class="k">${k + 1}</span><span class="fl">${flag(iso)}</span><span class="nm">${esc(nameOf(iso))}</span><span class="why"></span></button>`).join('');
+  $('opts').querySelectorAll('.opt').forEach(b => b.onclick = () => answer(b.dataset.iso));
+}
+
+function answer(pick) {
+  const r = round;
+  if (!r || r.answered) return;
+  r.answered = true;
+  const ok = pick === r.iso;
+  sess.n++; if (ok) { sess.ok++; sess.streak++; } else sess.streak = 0;
+  $('sN').textContent = sess.n; $('sOk').textContent = sess.ok; $('sSt').textContent = sess.streak;
+  const h = HIST[r.iso] || [0, 0, 0];
+  h[0]++; if (ok) { h[1]++; h[2] = Math.min(5, h[2] + 1); } else h[2] = 0;
+  HIST[r.iso] = h; lsSet(HKEY, HIST);
+  if (!ok && T && T.confusions) T.confusions.add('clue-fusion', r.iso, pick, r.clues.map(c => KIND[c.kind]).join(' + '));
+  pushStats();
+
+  $('game').classList.add('done');
+  // each clue: the countries it fits ; each option: which clues it fits (✓ / ·)
+  r.clues.forEach((c, i) => {
+    const box = $('clues').querySelector(`.clue[data-i="${i}"] .fits`);
+    const list = [...c.cand].sort((a, b) => (b === r.iso) - (a === r.iso) || nameOf(a).localeCompare(nameOf(b)));
+    const what = c.kind === 'lang' ? `${esc(c.lang.name)}: ` : c.kind === 'bollard' ? `${esc(c.sig)}: ` : '';
+    box.innerHTML = `${what}fits ${list.length} countries<br>` + list.map(x => `<span class="f${x === r.iso ? ' t' : x === pick ? ' a' : ''}" title="${esc(nameOf(x))}">${flag(x)} ${x}</span>`).join('');
+  });
+  $('opts').querySelectorAll('.opt').forEach(b => {
+    const iso = b.dataset.iso;
+    b.disabled = true;
+    b.classList.toggle('right', iso === r.iso);
+    b.classList.toggle('wrong', iso === pick && !ok);
+    b.querySelector('.why').textContent = r.clues.map(c => c.cand.has(iso) ? '✓' : '·').join('');
+  });
+  const misses = ok ? [] : r.clues.filter(c => !c.cand.has(pick)).map(c => c.kind === 'lang' ? `the ${c.lang.name} sign` : `the ${KIND[c.kind].toLowerCase()}`);
+  const kinds = [...new Set(r.clues.map(c => c.kind))];
+  const train = kinds.map(k => `<a href="${TRAIN[k][1].replace('{iso}', r.iso.toLowerCase())}" target="_blank" rel="noopener">${TRAIN[k][0]}: ${esc(nameOf(r.iso))} ↗</a>`);
+  if (!ok) train.push(...kinds.filter(k => r.clues.some(c => c.kind === k && !c.cand.has(pick))).map(k => `<a href="${TRAIN[k][1].replace('{iso}', pick.toLowerCase())}" target="_blank" rel="noopener">${TRAIN[k][0]}: ${esc(nameOf(pick))} ↗</a>`));
+  $('after').innerHTML = `<div class="verdict"><div class="v ${ok ? 'ok' : 'ko'}">${ok ? '✓ Right' : `✗ ${esc(nameOf(pick))}`} ${ok ? '' : '→'} ${flag(r.iso)} ${esc(nameOf(r.iso))}</div>`
+    + `<p>${ok ? `Only ${esc(nameOf(r.iso))} fits all ${r.clues.length} clues.` : `${esc(nameOf(pick))} does not fit ${misses.join(' and ')}.`} ✓ under each answer: the clues it fits.</p>`
+    + `<div class="train">${train.join('')}</div></div>`
+    + `<div class="next"><button class="primary" id="nextBtn">Next →</button><span class="hint">Enter / Space</span></div>`;
+  $('nextBtn').onclick = () => newRound();
+  $('nextBtn').focus({ preventScroll: true });
+}
+
+// ---------------------------------------------------------------- explore
+function showExplore(iso) {
+  const all = Object.keys(CLUES).sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
+  if (!iso || !CLUES[iso]) iso = (round && round.iso) || ELIG[0] || all[0];
+  if (!iso) return;
+  $('game').hidden = true; $('exp').hidden = false; $('expBtn').textContent = '▶ Play';
+  const cl = CLUES[iso] || [], seen = new Set();
+  const fitsHtml = c => {
+    const list = [...c.cand].sort((a, b) => (b === iso) - (a === iso) || nameOf(a).localeCompare(nameOf(b)));
+    return list.length < 2 ? '<span class="solo">only this country: gives it away alone</span>'
+      : `fits ${list.length} countries<br>` + list.map(x => `<span class="f${x === iso ? ' t' : ''}" title="${esc(nameOf(x))}">${flag(x)} ${x}</span>`).join('');
+  };
+  const card = (c, i) => {
+    let media;
+    if (c.kind === 'lang') media = `<div class="signbox" style="font-family:'${esc(c.lang.font)}','Noto Sans',sans-serif">${c.lang.s.slice(0, 3).map(x => `<span>${esc(x)}</span>`).join('')}</div>`;
+    else media = `<img src="${esc(c.img)}" alt="" loading="lazy" onclick="window.open(this.src,'_blank')">`;
+    const what = c.kind === 'lang' ? `${esc(c.lang.name)}` : c.kind === 'bollard' ? esc(c.sig) : 'Plate';
+    const credit = c.kind === 'bollard' ? '<div class="credit">photo: <a href="https://geohints.com/meta/bollards" target="_blank" rel="noopener">geohints</a></div>'
+      : c.credit ? `<div class="credit">photo: ${esc(c.credit)}</div>` : '';
+    return `<div class="clue"><div class="kind"><span>${what}</span></div><div class="media">${media}</div>${credit}<div class="fits">${fitsHtml(c)}</div></div>`;
+  };
+  const groups = ['plate', 'bollard', 'lang'].map(k => [k, cl.filter(c => c.kind === k && !seen.has(c.id) && seen.add(c.id))]).filter(([, l]) => l.length);
+  const playable = ELIG.includes(iso);
+  $('exp').innerHTML = `<h2>${flag(iso)} ${esc(nameOf(iso))}<span class="sp"></span>`
+    + `<select id="expSel" aria-label="Country">${all.map(k => `<option value="${k}"${k === iso ? ' selected' : ''}>${esc(nameOf(k))}</option>`).join('')}</select>`
+    + (playable ? `<button class="primary" id="expPlay">▶ Play ${esc(nameOf(iso))}</button>` : '') + `</h2>`
+    + `<p class="sub">${playable ? 'Each clue and the countries it fits: a round pairs clues whose only common country is this one.' : 'Not enough ambiguous clues of different kinds for a round on this country (or not in your tiers): here are its clues anyway.'}</p>`
+    + groups.map(([k, l]) => `<h3>${{ plate: 'Plates', bollard: 'Bollards', lang: 'Sign languages' }[k]} (${l.length})</h3><div class="egrid">${l.map(card).join('')}</div>`).join('')
+    + (groups.length ? '' : '<div class="empty">No clue for this country yet.</div>');
+  $('expSel').onchange = e => { location.hash = 'explore/' + e.target.value.toLowerCase(); };
+  if (playable) $('expPlay').onclick = () => { location.hash = iso.toLowerCase(); };
+  window.scrollTo(0, 0);
+}
+function hideExplore() { $('game').hidden = false; $('exp').hidden = true; $('expBtn').textContent = '🧭 Explore'; }
+$('expBtn').onclick = () => {
+  if ($('exp').hidden) { location.hash = 'explore/' + ((round && round.iso) || '').toLowerCase(); }
+  else { history.replaceState(null, '', location.pathname + location.search); hideExplore(); if (!round || round.answered) newRound(); }
+};
+
+// ---------------------------------------------------------------- stats (Atlas daily review: tgm.stats.clue-fusion)
+function pushStats() {
+  if (!T) return;
+  const s = T.stats.fromLeitner(HIST, k => k, { masteredBox: 4 });
+  s.total = ELIG.length;
+  T.stats.write('clue-fusion', s);
+}
+
+// ---------------------------------------------------------------- settings
+function setOpen(on) { $('settings').classList.toggle('open', on); $('scrim').hidden = !on; if (on) $('close').focus(); }
+$('gear').onclick = () => setOpen(true);
+$('close').onclick = $('scrim').onclick = () => setOpen(false);
+document.querySelectorAll('#settings [data-k]').forEach(cb => {
+  cb.checked = !!prefs.kinds[cb.dataset.k];
+  cb.onchange = () => {
+    const next = Object.assign({}, prefs.kinds, { [cb.dataset.k]: cb.checked });
+    if (Object.values(next).filter(Boolean).length < 2) { cb.checked = true; return; }
+    prefs.kinds = next; lsSet(PKEY, prefs); eligible(); newRound();
+  };
+});
+document.querySelectorAll('#settings [name=tier]').forEach(rb => {
+  rb.checked = +rb.value === +prefs.tier;
+  rb.onchange = () => { prefs.tier = +rb.value; lsSet(PKEY, prefs); eligible(); newRound(); };
+});
+$('optMix').checked = prefs.mix; $('optMix').onchange = e => { prefs.mix = e.target.checked; lsSet(PKEY, prefs); };
+$('optThree').checked = prefs.three; $('optThree').onchange = e => { prefs.three = e.target.checked; lsSet(PKEY, prefs); };
+$('reset').onclick = () => { if (confirm('Erase your Clue Fusion progress?')) { HIST = {}; lsSet(HKEY, HIST); pushStats(); } };
+
+document.addEventListener('keydown', e => {
+  if (e.target.closest && e.target.closest('input, textarea')) return;
+  if (e.key === 'Escape') return setOpen(false);
+  if (e.key === 's' || e.key === 'S') return setOpen(!$('settings').classList.contains('open'));
+  if ((e.key === 'e' || e.key === 'E') && !e.ctrlKey && !e.metaKey) return $('expBtn').click();
+  if (!$('exp').hidden) return;
+  if ($('settings').classList.contains('open')) return;
+  if (round && !round.answered && /^[1-6]$/.test(e.key)) { const iso = round.opts[+e.key - 1]; if (iso) answer(iso); return; }
+  if (round && round.answered && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); newRound(); }
+});
+
+// ---------------------------------------------------------------- start (#pl : start on that country)
+(async () => {
+  if (!T) { $('clues').innerHTML = '<div class="empty">tgm-core.js missing.</div>'; return; }
+  const np = loadPlates(), nl = loadLangs(), nb = await loadBollards();
+  const miss = [!np && 'plates', !nb && 'bollards'].filter(Boolean);
+  if (miss.length) $('note').innerHTML += `<br>Not loaded: ${miss.join(', ')} (they come from the plate-trainer and bollards-trainer sites; open this page from GitHub Pages or a local server over the whole folder).`;
+  eligible();
+  // #pl : a round on that country ; #explore/pl (Atlas country pages) : its clues, no round
+  const route = () => {
+    const h = location.hash.slice(1).toLowerCase(), m = h.match(/^explore(?:\/([a-z]{2}))?$/);
+    if (m) { showExplore(m[1] ? m[1].toUpperCase() : (round && round.iso)); return true; }
+    if (/^[a-z]{2}$/.test(h)) { hideExplore(); newRound(h.toUpperCase()); return true; }
+    return false;
+  };
+  if (!route()) newRound();
+  addEventListener('hashchange', route);
+  window.__cf = { counts: { plates: np, bollards: nb, langs: nl }, eligible: () => ELIG.slice() };   // read by tests
+})();
+})();
+</script>
+</body>
+</html>
